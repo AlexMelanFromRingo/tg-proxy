@@ -26,6 +26,7 @@ pub async fn run(
     stats: Arc<Stats>,
     tls: Arc<ClientConfig>,
     pool: Arc<WsPool>,
+    mut stop: tokio::sync::watch::Receiver<bool>,
 ) -> anyhow::Result<()> {
     use tokio::net::TcpListener;
 
@@ -76,27 +77,36 @@ pub async fn run(
     pool.warmup(&config, Arc::clone(&tls)).await;
 
     loop {
-        let (socket, peer) = match listener.accept().await {
-            Ok(p) => p,
-            Err(e) => {
-                warn!("Accept error: {}", e);
-                continue;
+        tokio::select! {
+            accept_result = listener.accept() => {
+                let (socket, peer) = match accept_result {
+                    Ok(p) => p,
+                    Err(e) => {
+                        warn!("Accept error: {}", e);
+                        continue;
+                    }
+                };
+                let _ = socket.set_nodelay(true);
+
+                let config = Arc::clone(&config);
+                let stats = Arc::clone(&stats);
+                let tls = Arc::clone(&tls);
+                let pool = Arc::clone(&pool);
+                let ws_blacklist = Arc::clone(&ws_blacklist);
+                let dc_fail_until = Arc::clone(&dc_fail_until);
+
+                tokio::spawn(async move {
+                    handle_client(socket, peer, config, stats, tls, pool, ws_blacklist, dc_fail_until)
+                        .await;
+                });
             }
-        };
-        let _ = socket.set_nodelay(true);
-
-        let config = Arc::clone(&config);
-        let stats = Arc::clone(&stats);
-        let tls = Arc::clone(&tls);
-        let pool = Arc::clone(&pool);
-        let ws_blacklist = Arc::clone(&ws_blacklist);
-        let dc_fail_until = Arc::clone(&dc_fail_until);
-
-        tokio::spawn(async move {
-            handle_client(socket, peer, config, stats, tls, pool, ws_blacklist, dc_fail_until)
-                .await;
-        });
+            _ = stop.changed() => {
+                info!("Proxy shutdown signal received");
+                break;
+            }
+        }
     }
+    Ok(())
 }
 
 async fn handle_client(

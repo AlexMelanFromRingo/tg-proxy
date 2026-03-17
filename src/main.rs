@@ -6,6 +6,9 @@ mod proxy;
 mod stats;
 mod websocket;
 
+#[cfg(feature = "gui")]
+mod gui;
+
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
 use std::str::FromStr;
@@ -22,11 +25,11 @@ use stats::Stats;
     about = "Telegram WebSocket bridge proxy\n\n\
              Tunnels Telegram Desktop/Mobile traffic over WebSocket (port 443)\n\
              to bypass DPI firewalls that block raw Telegram IP ranges.\n\n\
-             Mobile support: use --host 0.0.0.0 and set SOCKS5 proxy in\n\
-             Telegram Mobile to your LAN IP:port."
+             Mobile: use --host 0.0.0.0 and set SOCKS5 in Telegram Mobile\n\
+             to your LAN IP:port."
 )]
 struct Cli {
-    /// Listen host (use 0.0.0.0 to expose on LAN for mobile)
+    /// Listen host (0.0.0.0 to expose on LAN for mobile)
     #[arg(long, default_value = "127.0.0.1")]
     host: String,
 
@@ -34,9 +37,7 @@ struct Cli {
     #[arg(long, short, default_value_t = 1080)]
     port: u16,
 
-    /// Target IP for a DC, format: DC:IP  (can be repeated)
-    ///
-    /// Example: --dc-ip 1:149.154.175.50 --dc-ip 2:149.154.167.220
+    /// Target IP for a DC, format DC:IP  (repeatable)
     #[arg(
         long = "dc-ip",
         value_name = "DC:IP",
@@ -48,7 +49,7 @@ struct Cli {
     #[arg(short, long)]
     verbose: bool,
 
-    /// Disable TLS certificate verification (insecure, not recommended)
+    /// Disable TLS certificate verification (insecure)
     #[arg(long)]
     skip_tls_verify: bool,
 
@@ -63,6 +64,11 @@ struct Cli {
     /// Connection timeout in seconds
     #[arg(long, default_value_t = 10)]
     connect_timeout: u64,
+
+    /// Launch the tray + GUI window (requires --features gui build)
+    #[cfg(feature = "gui")]
+    #[arg(long)]
+    gui: bool,
 }
 
 fn parse_dc_ips(entries: &[String]) -> anyhow::Result<HashMap<u8, Ipv4Addr>> {
@@ -70,12 +76,12 @@ fn parse_dc_ips(entries: &[String]) -> anyhow::Result<HashMap<u8, Ipv4Addr>> {
     for entry in entries {
         let (dc_str, ip_str) = entry
             .split_once(':')
-            .ok_or_else(|| anyhow::anyhow!("Invalid --dc-ip format {:?}, expected DC:IP", entry))?;
+            .ok_or_else(|| anyhow::anyhow!("Invalid --dc-ip {:?}: expected DC:IP", entry))?;
         let dc: u8 = dc_str
             .parse()
-            .map_err(|_| anyhow::anyhow!("Invalid DC number: {:?}", dc_str))?;
+            .map_err(|_| anyhow::anyhow!("Invalid DC number {:?}", dc_str))?;
         let ip = Ipv4Addr::from_str(ip_str)
-            .map_err(|_| anyhow::anyhow!("Invalid IP address: {:?}", ip_str))?;
+            .map_err(|_| anyhow::anyhow!("Invalid IP {:?}", ip_str))?;
         if !(1..=5).contains(&dc) {
             anyhow::bail!("DC must be 1–5, got {}", dc);
         }
@@ -84,8 +90,7 @@ fn parse_dc_ips(entries: &[String]) -> anyhow::Result<HashMap<u8, Ipv4Addr>> {
     Ok(map)
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     let level = if cli.verbose { "debug" } else { "info" };
@@ -98,15 +103,13 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     if cli.skip_tls_verify {
-        tracing::warn!("TLS certificate verification is DISABLED (--skip-tls-verify)");
+        tracing::warn!("TLS certificate verification DISABLED (--skip-tls-verify)");
     }
 
     let dc_ips = parse_dc_ips(&cli.dc_ips)?;
     if dc_ips.is_empty() {
         anyhow::bail!("No DC IPs configured. Specify at least one --dc-ip DC:IP");
     }
-
-    let tls_config = websocket::build_tls_config(cli.skip_tls_verify)?;
 
     let config = Arc::new(Config {
         host: cli.host,
@@ -119,8 +122,22 @@ async fn main() -> anyhow::Result<()> {
     });
 
     let stats = Arc::new(Stats::new());
-    let tls = Arc::new(tls_config);
-    let pool = Arc::new(pool::WsPool::new());
 
-    proxy::run(config, stats, tls, pool).await
+    // ── GUI mode ──────────────────────────────────────────────────────────────
+    #[cfg(feature = "gui")]
+    if cli.gui {
+        // gui::run_gui takes over the main thread (required on macOS)
+        return gui::run_gui(config, stats);
+    }
+
+    // ── CLI mode ──────────────────────────────────────────────────────────────
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let tls = Arc::new(websocket::build_tls_config(config.skip_tls_verify)?);
+            let pool = Arc::new(pool::WsPool::new());
+            let (_stop_tx, stop_rx) = tokio::sync::watch::channel(false);
+            proxy::run(config, stats, tls, pool, stop_rx).await
+        })
 }

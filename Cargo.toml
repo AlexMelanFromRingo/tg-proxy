@@ -27,6 +27,21 @@ rand = "0.8"
 thiserror = "1"
 anyhow = "1"
 
+# Optional GUI deps
+eframe    = { version = "0.31", optional = true, default-features = false, features = ["glow", "default_fonts", "x11", "wayland"] }
+open      = { version = "5",   optional = true }
+# tray-icon requires GTK dev headers on Linux (libgtk-3-dev).
+# Separated into its own feature so Linux users can use --features gui
+# (window-only, no system deps) without having to install GTK.
+tray-icon = { version = "0.19", optional = true }
+
+[features]
+# Window-only GUI — works on all platforms without extra system packages
+gui = ["dep:eframe", "dep:open"]
+# Full GUI with system tray (Windows/macOS out of the box;
+# Linux needs: sudo apt install libgtk-3-dev)
+gui-tray = ["gui", "dep:tray-icon"]
+
 [profile.release]
 opt-level = 3
 lto = "fat"
