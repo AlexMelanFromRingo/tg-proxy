@@ -40,8 +40,8 @@ jobs:
             artifact: tg-proxy-windows-x86_64.exe
             cross: false
 
-          # macOS Intel
-          - os: macos-13
+          # macOS Intel — cross-compiled from Apple Silicon runner (macos-13 was removed)
+          - os: macos-latest
             target: x86_64-apple-darwin
             artifact: tg-proxy-macos-x86_64
             cross: false
@@ -98,6 +98,8 @@ jobs:
   release:
     name: Create GitHub Release
     needs: build
+    # Run even if some build jobs failed — publish whatever compiled successfully
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
