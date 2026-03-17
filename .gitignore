@@ -1,0 +1,16 @@
+/target/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# The original Python example is a third-party project — do not publish
+/example/
