@@ -13,7 +13,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/AlexMelanFromRingo/tg-proxy/ci.yml?style=flat-square&label=CI)](https://github.com/AlexMelanFromRingo/tg-proxy/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-8B6CFF?style=flat-square)](LICENSE)
 [![Rust 1.85+](https://img.shields.io/badge/rust-1.85%2B-f74c00?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org)
-[![Поддержать](https://img.shields.io/badge/%E2%99%A5-%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B0%D1%82%D1%8C-ff5c8a?style=flat-square)](docs/FUNDING.md)
+[![Поддержать](https://img.shields.io/badge/%E2%99%A5-%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B0%D1%82%D1%8C-ff5c8a?style=flat-square)](#поддержать-проект)
 
 [English](README.md) · **Русский**
 
@@ -45,7 +45,7 @@
 
 ```
   ╭───────────────────────────────────────────────────────╮
-  │  tg-proxy v1.1.0                                      │
+  │  tg-proxy v1.2.0                                      │
   │  Telegram over WebSocket · SNI fronting · Cloudflare  │
   ╰───────────────────────────────────────────────────────╯
 
@@ -227,6 +227,7 @@ WantedBy=multi-user.target
 | `--force-test-dc` | | Слать всё на *тестовые* дата-центры Telegram. |
 | `--pool-size` / `--pool-max-age` | `4` / `120` | Заранее открытых WebSocket-соединений на DC / их срок жизни (с). |
 | `--connect-timeout` | `5` | Таймаут прямого подключения (с). |
+| `--idle-timeout` · `TG_PROXY_IDLE_TIMEOUT` | `300` | Закрывать сессию после стольких секунд без данных (`0` = никогда). |
 | `--buf-kb` | `256` | Размер буфера сокета. |
 | `--log-file`, `--log-max-mb`, `--log-backups` | | Дублировать лог в файл с ротацией. |
 | `-v, --verbose` | | Подробный лог. |
@@ -263,7 +264,19 @@ cargo test --test e2e -- --ignored live      # плюс разговор с на
 
 ## Поддержать проект
 
-Проект бесплатный и под лицензией MIT. Если он помог сохранить Telegram рабочим, можно поддержать разработку криптовалютой: адреса в **[docs/FUNDING.md](docs/FUNDING.md)** ❤️
+> [!TIP]
+>
+> Проект бесплатный и под лицензией MIT. Если он помог сохранить Telegram рабочим, можно поддержать разработку криптовалютой ❤️
+>
+> **BTC** (SegWit): `bc1qd0t6uhrgq8ck74n3g2fweq4kfw35as66gne72y`  
+> **LTC**: `ltc1q2ku8rax5wgcuhh8m03k8gyng8ggj9svkjn6fq4`  
+> **BCH**: `qqkgr48fjxf0rf9cpd9zdjdpkuu29nhfj5y4hcdhfm`  
+> **TON**: `UQCKG4T2Csv5dGK24w1e8ndd96VuBanYey5tvzGeJkFW_09x`  
+> **ETH** (Ethereum / EVM, ERC‑20): `0x3729c742E6eF4552ad32c08f61804308CB1Cffd8`  
+> **ETC**: `0xB3a6Fa84556d562F1E7ceD5C8452985d1aDAf572`  
+> **RVN**: `RX7zXpdzH8GoBpHzzuVes3DN7znbwaWi4z`  
+>
+> Перед отправкой проверьте сеть: средства, отправленные не в той сети, вернуть нельзя.
 
 ## Лицензия
 

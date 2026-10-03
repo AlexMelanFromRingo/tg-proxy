@@ -13,7 +13,7 @@ It tunnels Telegram through routes that censors rarely block, and tells you whic
 [![CI](https://img.shields.io/github/actions/workflow/status/AlexMelanFromRingo/tg-proxy/ci.yml?style=flat-square&label=CI)](https://github.com/AlexMelanFromRingo/tg-proxy/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-8B6CFF?style=flat-square)](LICENSE)
 [![Rust 1.85+](https://img.shields.io/badge/rust-1.85%2B-f74c00?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org)
-[![Support](https://img.shields.io/badge/%E2%99%A5-support-ff5c8a?style=flat-square)](docs/FUNDING.md)
+[![Support](https://img.shields.io/badge/%E2%99%A5-support-ff5c8a?style=flat-square)](#support-the-project)
 
 **English** · [Русский](README.ru.md)
 
@@ -45,7 +45,7 @@ It tunnels Telegram through routes that censors rarely block, and tells you whic
 
 ```
   ╭───────────────────────────────────────────────────────╮
-  │  tg-proxy v1.1.0                                      │
+  │  tg-proxy v1.2.0                                      │
   │  Telegram over WebSocket · SNI fronting · Cloudflare  │
   ╰───────────────────────────────────────────────────────╯
 
@@ -227,6 +227,7 @@ Every option can also be given as an environment variable where one is listed.
 | `--force-test-dc` | | Send everything to Telegram's *test* datacenters. |
 | `--pool-size` / `--pool-max-age` | `4` / `120` | Pre‑warmed WebSocket connections per DC / their lifetime (s). |
 | `--connect-timeout` | `5` | Direct connection timeout (s). |
+| `--idle-timeout` · `TG_PROXY_IDLE_TIMEOUT` | `300` | Close a session after this many seconds without any data (`0` = never). |
 | `--buf-kb` | `256` | Socket buffer size. |
 | `--log-file`, `--log-max-mb`, `--log-backups` | | Mirror the log to a rotated file. |
 | `-v, --verbose` | | Debug logging. |
@@ -263,7 +264,19 @@ Beyond the original: `--check`; `--upstream-socks5`; fronting verified against `
 
 ## Support the project
 
-It is free and MIT‑licensed. If it kept Telegram working for you, you can support its development with crypto — addresses in **[docs/FUNDING.md](docs/FUNDING.md)** ❤️
+> [!TIP]
+>
+> It is free and MIT‑licensed. If it kept Telegram working for you, you can support its development with crypto ❤️
+>
+> **BTC** (SegWit): `bc1qd0t6uhrgq8ck74n3g2fweq4kfw35as66gne72y`  
+> **LTC**: `ltc1q2ku8rax5wgcuhh8m03k8gyng8ggj9svkjn6fq4`  
+> **BCH**: `qqkgr48fjxf0rf9cpd9zdjdpkuu29nhfj5y4hcdhfm`  
+> **TON**: `UQCKG4T2Csv5dGK24w1e8ndd96VuBanYey5tvzGeJkFW_09x`  
+> **ETH** (Ethereum / EVM, ERC‑20): `0x3729c742E6eF4552ad32c08f61804308CB1Cffd8`  
+> **ETC**: `0xB3a6Fa84556d562F1E7ceD5C8452985d1aDAf572`  
+> **RVN**: `RX7zXpdzH8GoBpHzzuVes3DN7znbwaWi4z`  
+>
+> Double‑check the network before sending: funds sent on the wrong network cannot be recovered.
 
 ## License
 

@@ -42,6 +42,27 @@ pub struct SessionInfo {
     /// e.g. `DC2m`
     pub tag: String,
     pub stats: Arc<Stats>,
+    /// End the session after this long without data in either direction (zero = never).
+    pub idle_timeout: Duration,
+}
+
+/// Resolves once no data has crossed the session for `idle` (never, if `idle` is zero).
+/// `activity` holds the time of the last transfer in milliseconds since `start`.
+async fn idle_watch(activity: &AtomicU64, start: Instant, idle: Duration) {
+    if idle.is_zero() {
+        return std::future::pending().await;
+    }
+    loop {
+        let deadline = start + Duration::from_millis(activity.load(Relaxed)) + idle;
+        if Instant::now() >= deadline {
+            return;
+        }
+        tokio::time::sleep_until(tokio::time::Instant::from_std(deadline)).await;
+    }
+}
+
+fn touch(activity: &AtomicU64, start: Instant) {
+    activity.store(start.elapsed().as_millis() as u64, Relaxed);
 }
 
 fn io_reason(what: &str, e: &io::Error) -> String {
@@ -76,9 +97,10 @@ pub async fn bridge_ws(
     let ws_w = Arc::new(Mutex::new(ws_w));
     let up_bytes = Arc::new(AtomicU64::new(0));
     let down_bytes = Arc::new(AtomicU64::new(0));
+    let activity = Arc::new(AtomicU64::new(0));
 
     let mut up_task = {
-        let (ws_w, up_bytes, stats) = (ws_w.clone(), up_bytes.clone(), info.stats.clone());
+        let (ws_w, up_bytes, stats, activity) = (ws_w.clone(), up_bytes.clone(), info.stats.clone(), activity.clone());
         tokio::spawn(async move {
             let mut buf = vec![0u8; RECV_BUF];
             loop {
@@ -93,6 +115,7 @@ pub async fn bridge_ws(
                     Err(e) => return io_reason("client read", &e),
                 };
                 up_bytes.fetch_add(n as u64, Relaxed);
+                touch(&activity, start);
                 stats.bytes_up.fetch_add(n as u64, Relaxed);
                 let chunk = &mut buf[..n];
 
@@ -134,12 +157,14 @@ pub async fn bridge_ws(
     };
 
     let mut down_task = {
-        let (ws_w, down_bytes, stats) = (ws_w.clone(), down_bytes.clone(), info.stats.clone());
+        let (ws_w, down_bytes, stats, activity) =
+            (ws_w.clone(), down_bytes.clone(), info.stats.clone(), activity.clone());
         tokio::spawn(async move {
             let reason = loop {
                 match ws_r.recv().await {
                     Ok(Some(WsMsg::Data(mut data))) => {
                         down_bytes.fetch_add(data.len() as u64, Relaxed);
+                        touch(&activity, start);
                         stats.bytes_down.fetch_add(data.len() as u64, Relaxed);
                         if let Some(d) = down.as_mut() {
                             d.reencrypt(&mut data);
@@ -166,6 +191,13 @@ pub async fn bridge_ws(
     let reason = tokio::select! {
         r = &mut up_task => { down_task.abort(); let _ = down_task.await; r.unwrap_or_default() }
         r = &mut down_task => { up_task.abort(); let _ = up_task.await; r.unwrap_or_default() }
+        _ = idle_watch(&activity, start, info.idle_timeout) => {
+            up_task.abort();
+            down_task.abort();
+            let _ = up_task.await;
+            let _ = down_task.await;
+            format!("idle for {}s", info.idle_timeout.as_secs())
+        }
     };
 
     let _ = tokio::time::timeout(Duration::from_millis(500), async {
@@ -188,9 +220,10 @@ pub async fn bridge_tcp(
     let (mut remote_r, mut remote_w) = remote.into_split();
     let up_bytes = Arc::new(AtomicU64::new(0));
     let down_bytes = Arc::new(AtomicU64::new(0));
+    let activity = Arc::new(AtomicU64::new(0));
 
     let mut up_task = {
-        let (up_bytes, stats) = (up_bytes.clone(), info.stats.clone());
+        let (up_bytes, stats, activity) = (up_bytes.clone(), info.stats.clone(), activity.clone());
         tokio::spawn(async move {
             let mut buf = vec![0u8; RECV_BUF];
             loop {
@@ -203,6 +236,7 @@ pub async fn bridge_tcp(
                     Err(e) => return io_reason("client read", &e),
                 };
                 up_bytes.fetch_add(n as u64, Relaxed);
+                touch(&activity, start);
                 stats.bytes_up.fetch_add(n as u64, Relaxed);
                 if let UpPath::Reencrypt(c) = &mut up {
                     c.decrypt_client(&mut buf[..n]);
@@ -216,7 +250,7 @@ pub async fn bridge_tcp(
     };
 
     let mut down_task = {
-        let (down_bytes, stats) = (down_bytes.clone(), info.stats.clone());
+        let (down_bytes, stats, activity) = (down_bytes.clone(), info.stats.clone(), activity.clone());
         tokio::spawn(async move {
             let mut buf = vec![0u8; RECV_BUF];
             let reason = loop {
@@ -226,6 +260,7 @@ pub async fn bridge_tcp(
                     Err(e) => break io_reason("upstream read", &e),
                 };
                 down_bytes.fetch_add(n as u64, Relaxed);
+                touch(&activity, start);
                 stats.bytes_down.fetch_add(n as u64, Relaxed);
                 if let Some(d) = down.as_mut() {
                     d.reencrypt(&mut buf[..n]);
@@ -242,6 +277,13 @@ pub async fn bridge_tcp(
     let reason = tokio::select! {
         r = &mut up_task => { down_task.abort(); let _ = down_task.await; r.unwrap_or_default() }
         r = &mut down_task => { up_task.abort(); let _ = up_task.await; r.unwrap_or_default() }
+        _ = idle_watch(&activity, start, info.idle_timeout) => {
+            up_task.abort();
+            down_task.abort();
+            let _ = up_task.await;
+            let _ = down_task.await;
+            format!("idle for {}s", info.idle_timeout.as_secs())
+        }
     };
     finish_log(&info, "TCP", &reason, up_bytes.load(Relaxed), down_bytes.load(Relaxed), start);
 }

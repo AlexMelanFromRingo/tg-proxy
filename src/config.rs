@@ -36,6 +36,9 @@ pub struct Settings {
     pub fake_tls_domain: String,
     pub proxy_protocol: bool,
     pub force_test_dc: bool,
+    /// Close a client session after this long without any data in either direction
+    /// (zero = never).
+    pub idle_timeout: Duration,
     /// Port of Telegram's WS gateway (443; overridable only so tests can point
     /// the direct route at a local mock).
     pub gateway_port: u16,
@@ -68,6 +71,7 @@ impl Default for Settings {
             fake_tls_domain: String::new(),
             proxy_protocol: false,
             force_test_dc: false,
+            idle_timeout: Duration::from_secs(300),
             gateway_port: 443,
             masking_port: 443,
             upstream_socks5: None,

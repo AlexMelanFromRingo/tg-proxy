@@ -67,6 +67,10 @@ struct Cli {
     #[arg(long, default_value_t = 120)]
     pool_max_age: u64,
 
+    /// Close a session after this many seconds without data (0 = never)
+    #[arg(long, default_value_t = 300, value_name = "SECS", env = "TG_PROXY_IDLE_TIMEOUT")]
+    idle_timeout: u64,
+
     /// Direct connection timeout, seconds
     #[arg(long, default_value_t = 5)]
     connect_timeout: u64,
@@ -180,6 +184,7 @@ fn build_settings(cli: &Cli) -> anyhow::Result<(Settings, SecretSource)> {
         fake_tls_domain,
         proxy_protocol: cli.proxy_protocol,
         force_test_dc: cli.force_test_dc,
+        idle_timeout: std::time::Duration::from_secs(cli.idle_timeout),
         gateway_port: 443,
         masking_port: 443,
         upstream_socks5: cli.upstream_socks5.clone().map(std::sync::Arc::new),

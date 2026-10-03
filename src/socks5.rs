@@ -207,8 +207,12 @@ async fn handle(sock: TcpStream, label: String, router: Arc<Router>) -> io::Resu
     let Some(route) = router.connect(&request).await else {
         return Ok(());
     };
-    let session =
-        SessionInfo { label: label.clone(), tag: DcKey { dc, media, test }.to_string(), stats: router.stats.clone() };
+    let session = SessionInfo {
+        label: label.clone(),
+        tag: DcKey { dc, media, test }.to_string(),
+        stats: router.stats.clone(),
+        idle_timeout: router.cfg.idle_timeout,
+    };
     let (creader, cwriter) = (ClientReader::Plain(rd), ClientWriter::Plain(wr));
 
     match route {
@@ -233,7 +237,12 @@ async fn handle(sock: TcpStream, label: String, router: Arc<Router>) -> io::Resu
 }
 
 async fn pipe(rd: OwnedReadHalf, wr: OwnedWriteHalf, remote: TcpStream, label: &str, router: &Arc<Router>) {
-    let session = SessionInfo { label: label.to_string(), tag: "passthrough".into(), stats: router.stats.clone() };
+    let session = SessionInfo {
+        label: label.to_string(),
+        tag: "passthrough".into(),
+        stats: router.stats.clone(),
+        idle_timeout: Duration::ZERO,
+    };
     bridge_tcp(ClientReader::Plain(rd), ClientWriter::Plain(wr), remote, UpPath::Verbatim, None, session).await;
 }
 
@@ -246,7 +255,12 @@ async fn pipe_with_init(
     tag: &str,
 ) {
     info!("[{}] {} plain TCP", label, tag);
-    let session = SessionInfo { label: label.to_string(), tag: tag.to_string(), stats: router.stats.clone() };
+    let session = SessionInfo {
+        label: label.to_string(),
+        tag: tag.to_string(),
+        stats: router.stats.clone(),
+        idle_timeout: router.cfg.idle_timeout,
+    };
     bridge_tcp(ClientReader::Plain(rd), ClientWriter::Plain(wr), remote, UpPath::Verbatim, None, session).await;
 }
 

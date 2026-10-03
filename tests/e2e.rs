@@ -1297,3 +1297,86 @@ async fn socks5_passthrough_cannot_reach_the_proxy_host_or_its_lan() {
     })
     .await;
 }
+
+// ═══════════════════════════ Idle timeout ════════════════════════════════════
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn idle_ws_sessions_are_closed_but_busy_ones_are_not() {
+    t(async {
+        let pki = gateway_pki();
+        let gw = spawn_gateway(&pki, GatewayOpts::default()).await;
+        let mut cfg = settings(Some(&gw));
+        cfg.idle_timeout = Duration::from_millis(700);
+        let proxy = start_proxy(cfg, tls_for(&pki)).await;
+
+        let mut c = MtClient::connect(proxy.mtproto, PROTO_ABRIDGED, 2).await;
+        let pkt = [vec![1u8], vec![7u8; 4]].concat();
+        // Busy: traffic every 250 ms for ~2 s, nearly three times the idle limit in total.
+        for _ in 0..8 {
+            c.send(&pkt).await;
+            assert_eq!(c.recv_exact(pkt.len()).await, xor_ff(&pkt), "a busy session must stay open");
+            tokio::time::sleep(Duration::from_millis(250)).await;
+        }
+        // Silent: closed shortly after the limit, not before it.
+        let started = std::time::Instant::now();
+        let mut b = [0u8; 16];
+        let r = tokio::time::timeout(Duration::from_secs(4), c.r.read(&mut b))
+            .await
+            .expect("an idle session must be closed");
+        assert!(matches!(r, Ok(0) | Err(_)));
+        assert!(started.elapsed() >= Duration::from_millis(150), "closed too early: {:?}", started.elapsed());
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn zero_idle_timeout_never_closes_a_quiet_session() {
+    t(async {
+        let pki = gateway_pki();
+        let gw = spawn_gateway(&pki, GatewayOpts::default()).await;
+        let mut cfg = settings(Some(&gw));
+        cfg.idle_timeout = Duration::ZERO;
+        let proxy = start_proxy(cfg, tls_for(&pki)).await;
+
+        let mut c = MtClient::connect(proxy.mtproto, PROTO_ABRIDGED, 2).await;
+        let pkt = [vec![1u8], vec![7u8; 4]].concat();
+        c.send(&pkt).await;
+        c.recv_exact(pkt.len()).await;
+        let mut b = [0u8; 16];
+        assert!(
+            tokio::time::timeout(Duration::from_millis(1200), c.r.read(&mut b)).await.is_err(),
+            "with the limit off, the session must stay open"
+        );
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn idle_tcp_sessions_are_closed_too() {
+    t(async {
+        let (dc_addr, _) = spawn_dc().await;
+        let (up_addr, _) = spawn_socks_upstream(dc_addr).await;
+        let pki = gateway_pki();
+        let mut cfg = settings(None); // no direct route: raw TCP through the upstream
+        cfg.upstream_socks5 = Some(Arc::new(up_addr.to_string().parse().unwrap()));
+        cfg.idle_timeout = Duration::from_millis(700);
+        let proxy = start_proxy(cfg, tls_for(&pki)).await;
+
+        let init = generate_relay_init(PROTO_ABRIDGED, 2);
+        let (mut enc, mut dec) = upstream_ciphers(&init);
+        let mut s = socks_connect(proxy.socks, Ipv4Addr::new(149, 154, 167, 51), 443).await;
+        s.write_all(&init).await.unwrap();
+        let mut m = b"hello".to_vec();
+        enc.apply_keystream(&mut m);
+        s.write_all(&m).await.unwrap();
+        let mut reply = vec![0u8; 5];
+        tokio::time::timeout(STEP, s.read_exact(&mut reply)).await.unwrap().unwrap();
+        dec.apply_keystream(&mut reply);
+        assert_eq!(reply, xor_ff(b"hello"));
+
+        let mut b = [0u8; 16];
+        let r = tokio::time::timeout(Duration::from_secs(4), s.read(&mut b)).await.expect("idle TCP session closed");
+        assert!(matches!(r, Ok(0) | Err(_)));
+    })
+    .await;
+}

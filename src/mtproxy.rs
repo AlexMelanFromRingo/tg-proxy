@@ -199,8 +199,12 @@ async fn handle_client(sock: TcpStream, mut label: String, router: Arc<Router>, 
     let Some(route) = router.connect(&req).await else {
         return;
     };
-    let session =
-        SessionInfo { label: label.clone(), tag: DcKey { dc, media, test }.to_string(), stats: router.stats.clone() };
+    let session = SessionInfo {
+        label: label.clone(),
+        tag: DcKey { dc, media, test }.to_string(),
+        stats: router.stats.clone(),
+        idle_timeout: cfg.idle_timeout,
+    };
 
     match route {
         Route::Ws { mut conn, framed, .. } => {

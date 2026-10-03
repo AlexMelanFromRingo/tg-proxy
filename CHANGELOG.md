@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] — 2026-10-03
+
+### Added
+- `--idle-timeout` (default 300 s, `0` = never): a client session that moves no data in either
+  direction for that long is closed, on every route. Ordinary SOCKS5 passthrough (non-Telegram
+  traffic) is exempt.
+
+### Changed
+- Donation details are shown directly in the READMEs instead of a separate page.
+
 ## [1.1.0] — 2026-10-03
 
 A rewrite of the routing core and the full feature set of the original
