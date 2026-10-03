@@ -164,6 +164,10 @@ async fn handle_client(sock: TcpStream, mut label: String, router: Arc<Router>, 
             "HTTP/1.1 301 Moved Permanently\r\nLocation: https://{masking}/\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
         );
         let _ = wr.write_all(resp.as_bytes()).await;
+        let _ = wr.shutdown().await;
+        let mut sink = [0u8; 1024];
+        let _ = timeout(Duration::from_secs(2), async { while matches!(rd.read(&mut sink).await, Ok(n) if n > 0) {} })
+            .await;
         return;
     } else {
         init[0] = first;

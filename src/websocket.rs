@@ -839,7 +839,8 @@ mod tests {
         let l = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = l.local_addr().unwrap();
         drop(l);
-        let mut o = ConnectOpts::new(Target::Addr(addr), "h", "/apiws", Duration::from_secs(2));
+        // (Windows retries a refused connection for ~2 s before reporting it.)
+        let mut o = ConnectOpts::new(Target::Addr(addr), "h", "/apiws", Duration::from_secs(15));
         o.secure = false;
         let e = connect(&plain_configs(), &o).await.err().unwrap();
         assert!(matches!(e, WsError::Io(_)) && !e.is_timeout());

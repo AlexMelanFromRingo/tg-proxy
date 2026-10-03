@@ -55,6 +55,9 @@ what works on a given network.
   off after a failed refill.
 - A short probe timeout during a DC's cool-down no longer escalates into an hour-long block of
   the whole gateway IP.
+- The Fake-TLS redirect for non-TLS traffic is no longer destroyed by a connection reset on
+  BSD/macOS (the reply is finished and the request drained before closing), so probes get what a
+  real web server would send.
 - TCP keepalive on all sockets, so a vanished client (phone left the Wi-Fi) is reaped.
 - Wrong DC gateway list: only `149.154.167.220` serves the WebSocket gateway, and only
   for DC2 and DC4; other datacenters are now reached through the other routes instead
