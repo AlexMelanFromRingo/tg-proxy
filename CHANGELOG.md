@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.2.0] — 2026-10-02
+## [1.1.0] — 2026-10-03
 
 A rewrite of the routing core and the full feature set of the original
 [`tg-ws-proxy`](https://github.com/Flowseal/tg-ws-proxy), plus tooling to find out
@@ -64,6 +64,7 @@ what works on a given network.
 - Nothing from the command line. The original project's Windows/macOS tray GUI,
   autostart and update checker are not part of this command-line tool.
 
-## [0.1.0]
+## [1.0.1], [1.0.0]
 
-Initial Rust implementation of the SOCKS5 WebSocket bridge.
+Earlier releases of the SOCKS5 WebSocket bridge; see the
+[GitHub releases](https://github.com/AlexMelanFromRingo/tg-proxy/releases).

@@ -45,7 +45,7 @@ It tunnels Telegram through routes that censors rarely block, and tells you whic
 
 ```
   ╭───────────────────────────────────────────────────────╮
-  │  tg-proxy v0.2.0                                      │
+  │  tg-proxy v1.1.0                                      │
   │  Telegram over WebSocket · SNI fronting · Cloudflare  │
   ╰───────────────────────────────────────────────────────╯
 

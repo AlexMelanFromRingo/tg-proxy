@@ -1,6 +1,6 @@
 [package]
 name = "tg_proxy"
-version = "0.2.0"
+version = "1.1.0"
 edition = "2021"
 rust-version = "1.85"
 description = "Telegram WebSocket bridge proxy — MTProto/SOCKS5 proxy that tunnels Telegram over WSS, SNI fronting and Cloudflare"
