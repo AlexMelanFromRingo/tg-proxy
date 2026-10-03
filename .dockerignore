@@ -1,0 +1,8 @@
+target
+.git
+.github
+.remember
+docs
+tests
+cloudflare
+*.md

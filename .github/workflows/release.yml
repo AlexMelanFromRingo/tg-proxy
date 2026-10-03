@@ -15,8 +15,18 @@ permissions:
   contents: write
 
 jobs:
+  test:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --locked
+
   build:
     name: ${{ matrix.artifact }}
+    needs: test
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -74,11 +84,11 @@ jobs:
 
       - name: Build (native)
         if: matrix.cross == false
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Build (cross)
         if: matrix.cross == true
-        run: cross build --release --target ${{ matrix.target }}
+        run: cross build --release --locked --target ${{ matrix.target }}
 
       - name: Stage artifact (Unix)
         if: runner.os != 'Windows'
@@ -107,8 +117,10 @@ jobs:
           merge-multiple: true
           path: dist
 
-      - name: List artifacts
-        run: ls -lh dist/
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum tg-proxy-* | tee SHA256SUMS.txt
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -118,9 +130,12 @@ jobs:
           body: |
             ## tg-proxy ${{ github.event.inputs.tag || github.ref_name }}
 
-            High-performance Telegram WebSocket bridge proxy written in Rust.
+            Telegram, where Telegram is blocked: one small binary, no server, no VPN.
+            Tunnels Telegram over WebSocket — direct, with SNI fronting, through a free
+            Cloudflare Worker, Cloudflare-proxied domains, or plain TCP — and tells you
+            which routes work on your network.
 
-            ### Binaries
+            ### Download
 
             | Platform | File |
             |---|---|
@@ -130,23 +145,27 @@ jobs:
             | macOS Intel | `tg-proxy-macos-x86_64` |
             | macOS Apple Silicon | `tg-proxy-macos-aarch64` |
 
+            Verify with `SHA256SUMS.txt`.
+
             ### Quick start
 
             ```
-            # Linux/macOS
-            chmod +x tg-proxy-linux-x86_64
-            ./tg-proxy-linux-x86_64
-
-            # Windows
-            tg-proxy-windows-x86_64.exe
+            chmod +x tg-proxy-linux-x86_64 && ./tg-proxy-linux-x86_64     # Linux / macOS
+            tg-proxy-windows-x86_64.exe                                   # Windows
             ```
 
-            Then configure Telegram Desktop: **Settings → Advanced → Connection type → Proxy → SOCKS5 → 127.0.0.1:1080**
+            Click the `tg://proxy?…` link it prints to add the proxy to Telegram.
+            Something wrong? Run `tg-proxy --check` to see which routes work.
 
-            Or open in Telegram automatically: `tg://socks?server=127.0.0.1&port=1080`
+            **Docs:** [English](https://github.com/AlexMelanFromRingo/tg-proxy#readme) ·
+            [Русский](https://github.com/AlexMelanFromRingo/tg-proxy/blob/main/README.ru.md) ·
+            [Cloudflare Worker guide](https://github.com/AlexMelanFromRingo/tg-proxy/blob/main/docs/CLOUDFLARE.md)
 
-            **Mobile (LAN):** run with `--host 0.0.0.0` and connect from your phone to your LAN IP.
-          files: dist/tg-proxy-*
+            macOS may block unsigned binaries on first run: right-click → Open, or
+            `xattr -d com.apple.quarantine ./tg-proxy-macos-*`.
+          files: |
+            dist/tg-proxy-*
+            dist/SHA256SUMS.txt
           generate_release_notes: false
           draft: false
           prerelease: false

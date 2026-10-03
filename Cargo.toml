@@ -1,10 +1,15 @@
 [package]
 name = "tg_proxy"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "Telegram WebSocket bridge proxy — high-performance SOCKS5 proxy that tunnels Telegram traffic over WebSocket"
+rust-version = "1.85"
+description = "Telegram WebSocket bridge proxy — MTProto/SOCKS5 proxy that tunnels Telegram over WSS, SNI fronting and Cloudflare"
 license = "MIT"
-repository = "https://github.com/young-developer/tg-proxy"
+repository = "https://github.com/AlexMelanFromRingo/tg-proxy"
+
+[lib]
+name = "tg_proxy"
+path = "src/lib.rs"
 
 [[bin]]
 name = "tg-proxy"
@@ -19,13 +24,20 @@ webpki-roots = "0.26"
 aes = "0.8"
 ctr = "0.9"
 cipher = "0.4"
-clap = { version = "4", features = ["derive"] }
+sha2 = "0.10"
+hmac = "0.12"
+bytes = "1"
+socket2 = "0.5"
+clap = { version = "4", features = ["derive", "env"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 base64 = "0.22"
 rand = "0.8"
 thiserror = "1"
 anyhow = "1"
+
+[dev-dependencies]
+rcgen = "0.13"
 
 [profile.release]
 opt-level = 3

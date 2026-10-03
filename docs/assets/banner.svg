@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" role="img" aria-labelledby="title desc">
+  <title id="title">tg-proxy</title>
+  <desc id="desc">Telegram where Telegram is blocked: WebSocket, SNI fronting, Cloudflare Worker, MTProto</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a1020"/>
+      <stop offset="1" stop-color="#15264a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2AABEE"/>
+      <stop offset="1" stop-color="#8B6CFF"/>
+    </linearGradient>
+    <!-- a horizontal line has a zero-height bounding box, so it needs user-space coordinates -->
+    <linearGradient id="accentLine" gradientUnits="userSpaceOnUse" x1="685" y1="0" x2="980" y2="0">
+      <stop offset="0" stop-color="#2AABEE"/>
+      <stop offset="1" stop-color="#8B6CFF"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.875" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#2AABEE" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#2AABEE" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.08" cy="1" r="0.5">
+      <stop offset="0" stop-color="#8B6CFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#8B6CFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="plane" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#cfe9fb"/>
+    </linearGradient>
+    <clipPath id="card"><rect width="1200" height="340" rx="28"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#card)">
+    <rect width="1200" height="340" fill="url(#bg)"/>
+    <rect width="1200" height="340" fill="url(#glow)"/>
+    <rect width="1200" height="340" fill="url(#glow2)"/>
+
+    <!-- routes: several independent paths converge on one destination -->
+    <g fill="none" stroke-linecap="round">
+      <path d="M730 70  C 840 70, 900 150, 980 170" stroke="url(#accent)" stroke-width="3" opacity="0.9"/>
+      <path d="M700 118 C 820 118, 900 160, 980 170" stroke="url(#accent)" stroke-width="3" opacity="0.65" stroke-dasharray="2 10"/>
+      <path d="M685 170 L 980 170" stroke="url(#accentLine)" stroke-width="3" opacity="0.95"/>
+      <path d="M700 222 C 820 222, 900 180, 980 170" stroke="url(#accent)" stroke-width="3" opacity="0.65" stroke-dasharray="2 10"/>
+      <path d="M730 270 C 840 270, 900 190, 980 170" stroke="url(#accent)" stroke-width="3" opacity="0.9"/>
+    </g>
+    <g fill="#0a1020" stroke="url(#accent)" stroke-width="3">
+      <circle cx="730" cy="70"  r="7"/>
+      <circle cx="700" cy="118" r="7"/>
+      <circle cx="685" cy="170" r="7"/>
+      <circle cx="700" cy="222" r="7"/>
+      <circle cx="730" cy="270" r="7"/>
+    </g>
+
+    <!-- destination badge with a paper plane -->
+    <g transform="translate(1050 170)">
+      <circle r="92" fill="#2AABEE" opacity="0.12"/>
+      <circle r="70" fill="url(#accent)"/>
+      <g transform="translate(-3 2) scale(1.05)">
+        <path d="M-40 -2 L40 -34 L22 36 L5 12 Z" fill="url(#plane)"/>
+        <path d="M5 12 L40 -34 L-12 14 Z" fill="#a9d6f3"/>
+        <path d="M5 12 L-4 34 L-12 14 Z" fill="#8fc4ea"/>
+      </g>
+    </g>
+
+    <!-- text -->
+    <text x="70" y="140" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif"
+          font-size="92" font-weight="800" fill="#ffffff" letter-spacing="-2">tg-proxy</text>
+    <rect x="72" y="162" width="96" height="6" rx="3" fill="url(#accent)"/>
+    <text x="70" y="214" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif"
+          font-size="28" font-weight="500" fill="#d6e4f7">Telegram, where Telegram is blocked.</text>
+
+    <g font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif" font-size="19" font-weight="600">
+      <rect x="70"  y="248" width="118" height="38" rx="19" fill="#ffffff" fill-opacity="0.09" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="129" y="273" text-anchor="middle" fill="#bcd4f2">WebSocket</text>
+      <rect x="198" y="248" width="138" height="38" rx="19" fill="#ffffff" fill-opacity="0.09" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="267" y="273" text-anchor="middle" fill="#bcd4f2">SNI fronting</text>
+      <rect x="346" y="248" width="116" height="38" rx="19" fill="#ffffff" fill-opacity="0.09" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="404" y="273" text-anchor="middle" fill="#bcd4f2">Cloudflare</text>
+    </g>
+  </g>
+</svg>
